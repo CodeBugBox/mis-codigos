@@ -1,0 +1,165 @@
+import itertools
+import string
+import math
+import time
+import shutil
+import os
+
+def calcular_combinaciones_personalizado(longitud_minima, longitud_maxima, incluir_minusculas, incluir_mayusculas, incluir_numeros, incluir_especiales):
+    """Calcula la cantidad total de combinaciones posibles dentro de un rango de longitudes con selección de tipos de caracteres."""
+    total_combinaciones = 0
+    caracteres = ""
+    if incluir_minusculas:
+        caracteres += string.ascii_lowercase
+    if incluir_mayusculas:
+        caracteres += string.ascii_uppercase
+    if incluir_numeros:
+        caracteres += string.digits
+    if incluir_especiales:
+        caracteres += string.punctuation
+
+    num_caracteres = len(caracteres)
+    if num_caracteres == 0:
+        return 0
+
+    for longitud in range(longitud_minima, longitud_maxima + 1):
+        total_combinaciones += num_caracteres ** longitud
+    return total_combinaciones
+
+def generar_diccionario_personalizado(longitud_minima, longitud_maxima, incluir_minusculas, incluir_mayusculas, incluir_numeros, incluir_especiales, nombre_archivo="diccionario.txt"):
+    """Genera el diccionario de contraseñas dentro de un rango de longitudes con selección de tipos de caracteres y lo guarda en un archivo."""
+    caracteres = ""
+    if incluir_minusculas:
+        caracteres += string.ascii_lowercase
+    if incluir_mayusculas:
+        caracteres += string.ascii_uppercase
+    if incluir_numeros:
+        caracteres += string.digits
+    if incluir_especiales:
+        caracteres += string.punctuation
+
+    if not caracteres:
+        print("No se seleccionaron tipos de caracteres. El diccionario estará vacío.")
+        return
+
+    with open(nombre_archivo, "w") as archivo:
+        inicio_tiempo = time.time()
+        total_generado = 0
+        total_a_generar = calcular_combinaciones_personalizado(longitud_minima, longitud_maxima, incluir_minusculas, incluir_mayusculas, incluir_numeros, incluir_especiales)
+
+        for longitud in range(longitud_minima, longitud_maxima + 1):
+            print(f"Generando combinaciones de longitud {longitud}...")
+            for combinacion in itertools.product(caracteres, repeat=longitud):
+                archivo.write("".join(combinacion) + "\n")
+                total_generado += 1
+
+                if total_generado % 10000 == 0 and total_generado > 0: # Estimar cada 10000 combinaciones
+                    tiempo_transcurrido = time.time() - inicio_tiempo
+                    velocidad = total_generado / tiempo_transcurrido
+                    tiempo_restante = (total_a_generar - total_generado) / velocidad
+                    print(f"  Generadas {total_generado}/{total_a_generar} combinaciones. Tiempo transcurrido: {time.strftime('%H:%M:%S', time.gmtime(tiempo_transcurrido))}. Tiempo restante estimado: {time.strftime('%H:%M:%S', time.gmtime(tiempo_restante))}", end='\r')
+
+        fin_tiempo = time.time()
+        tiempo_total = fin_tiempo - inicio_tiempo
+        print(f"\nDiccionario generado exitosamente en '{nombre_archivo}' en {time.strftime('%H:%M:%S', time.gmtime(tiempo_total))}.")
+
+def convertir_bytes(bytes_int):
+    """Convierte bytes a una unidad legible (KB, MB, GB, TB, PB)."""
+    if bytes_int >= (1024 ** 5):
+        return f"{bytes_int / (1024 ** 5):.2f} PB"
+    elif bytes_int >= (1024 ** 4):
+        return f"{bytes_int / (1024 ** 4):.2f} TB"
+    elif bytes_int >= (1024 ** 3):
+        return f"{bytes_int / (1024 ** 3):.2f} GB"
+    elif bytes_int >= (1024 ** 2):
+        return f"{bytes_int / (1024 ** 2):.2f} MB"
+    elif bytes_int >= 1024:
+        return f"{bytes_int / 1024:.2f} KB"
+    else:
+        return f"{bytes_int} bytes"
+
+def formatear_cantidad(cantidad):
+    """Formatea grandes cantidades a un formato más legible (millones, billones, etc.)."""
+    if cantidad >= 1_000_000_000_000:
+        return f"{cantidad / 1_000_000_000_000:.2f} billones"
+    elif cantidad >= 1_000_000_000:
+        return f"{cantidad / 1_000_000_000:.2f} mil millones"
+    elif cantidad >= 1_000_000:
+        return f"{cantidad / 1_000_000:.2f} millones"
+    elif cantidad >= 1_000:
+        return f"{cantidad / 1_000:.0f} mil"
+    else:
+        return str(int(cantidad))
+
+def main():
+    """Función principal del programa."""
+
+    while True:
+        try:
+            longitud_minima = int(input("Ingrese la longitud mínima de las cadenas: "))
+            if longitud_minima <= 0:
+                print("La longitud mínima debe ser mayor que 0.")
+            else:
+                break
+        except ValueError:
+            print("Por favor, ingrese un número entero válido.")
+
+    while True:
+        try:
+            longitud_maxima = int(input("Ingrese la longitud máxima de las cadenas: "))
+            if longitud_maxima < longitud_minima:
+                print("La longitud máxima debe ser mayor o igual que la longitud mínima.")
+            elif longitud_maxima <= 0:
+                print("La longitud máxima debe ser mayor que 0.")
+            else:
+                break
+        except ValueError:
+            print("Por favor, ingrese un número entero válido.")
+
+    print("\nSeleccione los tipos de caracteres a incluir (s/n):")
+    incluir_minusculas = input("¿Letras minúsculas? (s/n): ").lower() == 's'
+    incluir_mayusculas = input("¿Letras mayúsculas? (s/n): ").lower() == 's'
+    incluir_numeros = input("¿Números? (s/n): ").lower() == 's'
+    incluir_especiales = input("¿Caracteres especiales? (s/n): ").lower() == 's'
+
+    total_combinaciones = calcular_combinaciones_personalizado(longitud_minima, longitud_maxima, incluir_minusculas, incluir_mayusculas, incluir_numeros, incluir_especiales)
+    combinaciones_formateadas = formatear_cantidad(total_combinaciones)
+
+    print(f"\nSe generarán aproximadamente {combinaciones_formateadas} combinaciones (desde {longitud_minima} hasta {longitud_maxima} caracteres) con los tipos de caracteres seleccionados.")
+
+    # Estimación del tamaño del archivo
+    tamaño_estimado_bytes = 0
+    tamaño_estimado_formateado = "Desconocido"
+    if total_combinaciones > 0:
+        longitud_promedio = (longitud_minima + longitud_maxima) / 2
+        bytes_por_linea = longitud_promedio + 1  # +1 para el carácter de nueva línea
+        tamaño_estimado_bytes = total_combinaciones * bytes_por_linea
+        tamaño_estimado_formateado = convertir_bytes(tamaño_estimado_bytes)
+        print(f"El tamaño estimado del archivo será de aproximadamente {tamaño_estimado_formateado}.")
+    else:
+        print("No se generarán combinaciones, por lo tanto, el archivo estará vacío.")
+        tamaño_estimado_formateado = "0 bytes"
+
+    # Calcular espacio libre en disco
+    ruta_archivo = "diccionario.txt"  # Usamos el nombre del archivo para obtener la ruta del directorio
+    espacio_libre = shutil.disk_usage(os.path.dirname(os.path.abspath(ruta_archivo))).free
+    espacio_libre_formateado = convertir_bytes(espacio_libre)
+    print(f"Espacio libre en disco: {espacio_libre_formateado}.")
+
+    if total_combinaciones > 0 and tamaño_estimado_bytes > espacio_libre:
+        print(f"\n¡Advertencia! El tamaño estimado del archivo ({tamaño_estimado_formateado}) es mayor que el espacio libre en disco ({espacio_libre_formateado}). La generación podría fallar por falta de espacio.")
+        continuar = input("¿Desea continuar de todos modos? (s/n): ").lower()
+        if continuar != 's':
+            print("Generación del diccionario cancelada debido a posible falta de espacio.")
+            return
+
+    confirmacion = input("¿Desea continuar con la generación del diccionario? (s/n): ").lower()
+
+    if confirmacion == 's':
+        generar_diccionario_personalizado(longitud_minima, longitud_maxima, incluir_minusculas, incluir_mayusculas, incluir_numeros, incluir_especiales)
+    else:
+        print("Generación del diccionario cancelada por el usuario.")
+
+if __name__ == "__main__":
+    main()
+
